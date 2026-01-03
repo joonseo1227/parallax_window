@@ -6,7 +6,7 @@ An immersive **webcam-based 3D shooting game** that transforms your screen into 
 
 **🌐 Live Demo:** https://parallax-window.vercel.app/
 
-https://github.com/user-attachments/assets/244ec3c9-e0f7-445f-ba9b-d492f964337c
+https://github.com/user-attachments/assets/83c0f263-ec7a-4c56-9d25-5eba99269c51
 
 > **Note:** Requires webcam access
 
