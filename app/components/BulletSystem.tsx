@@ -1,11 +1,14 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Instance, Instances } from '@react-three/drei';
 import * as THREE from 'three';
 import { HandData } from '../hooks/useMultimodalTracking';
+import { calculateCameraPosition } from '../utils/parallaxUtils';
+import { FacePosition } from '../hooks/useFaceTracking';
 
 interface BulletSystemProps {
     handData: HandData | null;
+    facePosition: FacePosition;
     screenSize: { width: number; height: number };
 }
 
@@ -17,7 +20,7 @@ interface Bullet {
     life: number;
 }
 
-export const BulletSystem = ({ handData, screenSize }: BulletSystemProps) => {
+export const BulletSystem = ({ handData, facePosition, screenSize }: BulletSystemProps) => {
     const [bullets, setBullets] = useState<Bullet[]>([]);
     const lastFireTime = useRef(0);
 
@@ -30,11 +33,6 @@ export const BulletSystem = ({ handData, screenSize }: BulletSystemProps) => {
 
         // 1. Spawning Logic
         if (handData && handData.isGunPose && handData.isFiring) {
-            // Debounce slightly in case frame-perfect triggers overlap, 
-            // though hook handles cooldown.
-            // We use the timestamp from hook or just verify we haven't fired for this specific visual event yet?
-            // The hook sends `isFiring` as true for a frame.
-
             // Check if we already processed this "burst"
             if (now - lastFireTime.current > 0.1) {
                 spawnBullet(handData);
@@ -53,35 +51,33 @@ export const BulletSystem = ({ handData, screenSize }: BulletSystemProps) => {
                 ...b,
                 position: newPos,
                 life: newLife,
-                active: newLife > 0 && newPos.z > -200 // Kill if too far
+                // Kill if too far or generic cleanup
+                active: newLife > 0 && newPos.z > -200
             };
         }).filter(b => b.active));
     });
 
     const spawnBullet = (data: HandData) => {
         // Map Hand Coordinates (Normalized 0..1) to World
-        // Normalized: x[0..1], y[0..1]
-        // World: x[-20..20], y[-11.25..11.25] (at Z=0 roughly)
-        // Note: data.indexTipPos.x is normalized.
+        // Note: For this specific request, we ignore hand position for SPARING point,
+        // but triggered by hand.
+        // Screen Center at Z=0 is (0,0,0) in our World, assuming Scene centering.
+        // We want unconditional firing from center.
 
-        // Mediapipe: x:0(left)..1(right), y:0(top)..1(bottom)
-        const wx = (data.indexTipPos.x - 0.5) * screenSize.width;
-        const wy = -(data.indexTipPos.y - 0.5) * screenSize.height;
+        const startPos = new THREE.Vector3(0, 0, 0);
 
-        // Z? Hand z is relative. Let's assume Screen Plane + offset
-        const wz = 0;
+        // Calculate Camera Position (Eye Position)
+        const cameraPos = calculateCameraPosition(facePosition);
 
-        const startPos = new THREE.Vector3(-wx, wy, wz); // Mirror X for webcam
-
-        // Velocity: Shoot 'forward' into the screen (-Z)
-        // We could angle it based on wrist-index vector for more realism?
-        // For now, straight forward.
-        const velocity = new THREE.Vector3(0, 0, -1);
+        // Raycast Direction: From Camera (Eye) -> Hand (Screen Plane) -> World
+        // Vector = StartPos - CameraPos
+        // (Hand is at StartPos)
+        const direction = new THREE.Vector3().subVectors(startPos, cameraPos).normalize();
 
         const newBullet: Bullet = {
             id: Math.random(),
             position: startPos,
-            velocity: velocity,
+            velocity: direction,
             active: true,
             life: 3.0
         };
@@ -98,7 +94,11 @@ export const BulletSystem = ({ handData, screenSize }: BulletSystemProps) => {
                 <Instance
                     key={b.id}
                     position={b.position}
-                    rotation={[Math.PI / 2, 0, 0]} // Align capsule with Z axis
+                    rotation={[Math.PI / 2, 0, 0]} // Align capsule with Z axis (default)
+                // TODO: Rotate bullet to match direction? 
+                // Capsule default is Y-axis alignment. Rotation [PI/2, 0, 0] makes it Z-axis aligned.
+                // If we want it to point in velocity dir, we need lookAt.
+                // For now, simple Z alignment is fine as they fly "into" the screen.
                 />
             ))}
         </Instances>

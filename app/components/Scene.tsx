@@ -194,6 +194,7 @@ export default function Scene() {
                 {/* NEW: Bullet System */}
                 <BulletSystem
                     handData={handData}
+                    facePosition={facePosition}
                     screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
                 />
 

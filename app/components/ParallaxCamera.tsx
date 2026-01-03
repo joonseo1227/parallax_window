@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { FacePosition } from '../hooks/useFaceTracking';
+import { calculateCameraPosition } from '../utils/parallaxUtils';
 
 interface ParallaxCameraProps {
     facePosition: FacePosition;
@@ -11,49 +12,19 @@ interface ParallaxCameraProps {
 
 export const ParallaxCamera = ({ facePosition, facePositionRef, screenSize = { width: 40, height: 22.5 } }: ParallaxCameraProps) => {
     const { camera } = useThree();
-    const currentPos = useRef(new THREE.Vector3(0, 0, 60)); // Initial camera position (Standard Z distance)
+    const currentPos = useRef(new THREE.Vector3(0, 0, 60)); // Initial camera position
 
     // Tuning parameters
     const SMOOTHING_FACTOR = 0.3; // Increased responsiveness (was 0.1)
 
-    // Physical-ish mapping
-    // Input x,y: [-1, 1]. Map to physical units relative to screen center.
-    // If screen width is 40 units, logical max X movement might be +/- 40 or more.
-    const SCALE_X = 30;
-    const SCALE_Y = 20;
-
-    // Z Mapping: Input Z is approximate. Map to distance range.
-    // Standard monitoring distance ~60 units. 
-    // Closer (~30) -> High distortion. Further (~100) -> Flat.
-    const BASE_Z = 60;
-    const Z_RANGE = 40; // Variation
+    // Physical-ish mapping - Moved to parallaxUtils
 
     useFrame(() => {
         // 1. Smoothing & Target Calculation
-        let targetVec: THREE.Vector3;
-
         // Use ref if available for latest data, otherwise prop
         const latestPos = facePositionRef?.current || facePosition;
 
-        if (!latestPos.detected) {
-            // Return to center if lost
-            targetVec = new THREE.Vector3(0, 0, BASE_Z);
-        } else {
-            // Invert X because if I move LEFT (negative), 
-            // the camera effectively moves LEFT to see transparency.
-            // Wait, standard Off-Axis:
-            // Eye at (px, py, pz).
-            // Screen is fixed window at Z=0.
-
-            const px = -latestPos.x * SCALE_X; // X input is normalized -1(left)..1(right). 
-
-            const py = latestPos.y * SCALE_Y;
-
-            // Z Logic: facePosition.z is roughly (nose.z).
-            const pz = BASE_Z + (latestPos.z * Z_RANGE);
-
-            targetVec = new THREE.Vector3(px, py, Math.max(10, pz)); // Clamp Z min 10
-        }
+        const targetVec = calculateCameraPosition(latestPos);
 
         // Apply Smoothing
         currentPos.current.lerp(targetVec, SMOOTHING_FACTOR);
