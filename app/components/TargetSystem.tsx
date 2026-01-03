@@ -1,6 +1,5 @@
-import { useRef, useState, useImperativeHandle, forwardRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Instance, Instances } from '@react-three/drei';
+import {forwardRef, useImperativeHandle, useMemo, useRef, useState} from 'react';
+import {useFrame} from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Interface for what we expose to the parent/BulletSystem via Ref
@@ -84,7 +83,7 @@ export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((prop
         hit: (id: number) => {
             setTargets(prev => prev.map(t => {
                 if (t.id === id && t.active) {
-                    return { ...t, active: false, hitTime: Date.now() }; // Mark as hit
+                    return {...t, active: false, hitTime: Date.now()}; // Mark as hit
                 }
                 return t;
             }));
@@ -129,7 +128,7 @@ export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((prop
 
             // Spawn in animation
             if (t.scale < 3) {
-                return { ...t, scale: Math.min(3, t.scale + delta * 5) }; // Animate to 3, faster speed
+                return {...t, scale: Math.min(3, t.scale + delta * 5)}; // Animate to 3, faster speed
             }
             return t;
         }));
@@ -140,8 +139,9 @@ export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((prop
             {targets.map(t => (
                 t.active && (
                     <mesh key={t.id} position={t.position} scale={[t.scale, t.scale, t.scale]}>
-                        <icosahedronGeometry args={[1, 0]} /> {/* Low poly sphere */}
-                        <meshStandardMaterial color={t.color} roughness={0.3} metalness={0.8} />
+                        <icosahedronGeometry args={[1, 0]}/>
+                        {/* Low poly sphere */}
+                        <meshStandardMaterial color={t.color} roughness={0.3} metalness={0.8}/>
                     </mesh>
                 )
             ))}

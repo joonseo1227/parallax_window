@@ -1,8 +1,8 @@
-import { useFrame, useThree } from '@react-three/fiber';
-import { useRef } from 'react';
+import {useFrame, useThree} from '@react-three/fiber';
+import {useRef} from 'react';
 import * as THREE from 'three';
-import { FacePosition } from '../hooks/useFaceTracking';
-import { calculateCameraPosition } from '../utils/parallaxUtils';
+import {FacePosition} from '../hooks/useFaceTracking';
+import {calculateCameraPosition} from '../utils/parallaxUtils';
 
 interface ParallaxCameraProps {
     facePosition: FacePosition;
@@ -10,8 +10,12 @@ interface ParallaxCameraProps {
     screenSize?: { width: number; height: number };
 }
 
-export const ParallaxCamera = ({ facePosition, facePositionRef, screenSize = { width: 40, height: 22.5 } }: ParallaxCameraProps) => {
-    const { camera } = useThree();
+export const ParallaxCamera = ({
+                                   facePosition,
+                                   facePositionRef,
+                                   screenSize = {width: 40, height: 22.5}
+                               }: ParallaxCameraProps) => {
+    const {camera} = useThree();
     const currentPos = useRef(new THREE.Vector3(0, 0, 60)); // Initial camera position
 
     // Tuning parameters

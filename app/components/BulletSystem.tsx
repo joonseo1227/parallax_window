@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Instance, Instances } from '@react-three/drei';
+import {useRef, useState} from 'react';
+import {useFrame} from '@react-three/fiber';
+import {Instance, Instances} from '@react-three/drei';
 import * as THREE from 'three';
-import { HandData } from '../hooks/useMultimodalTracking';
-import { calculateCameraPosition } from '../utils/parallaxUtils';
-import { FacePosition } from '../hooks/useFaceTracking';
-import { TargetSystemRef } from './TargetSystem';
+import {HandData} from '../hooks/useMultimodalTracking';
+import {calculateCameraPosition} from '../utils/parallaxUtils';
+import {FacePosition} from '../hooks/useFaceTracking';
+import {TargetSystemRef} from './TargetSystem';
 
 interface BulletSystemProps {
     handData: HandData | null;
@@ -22,7 +22,7 @@ interface Bullet {
     life: number;
 }
 
-export const BulletSystem = ({ handData, facePosition, screenSize, targetsRef }: BulletSystemProps) => {
+export const BulletSystem = ({handData, facePosition, screenSize, targetsRef}: BulletSystemProps) => {
     const [bullets, setBullets] = useState<Bullet[]>([]);
     const [fragments, setFragments] = useState<Fragment[]>([]);
     const lastFireTime = useRef(0);
@@ -179,8 +179,8 @@ export const BulletSystem = ({ handData, facePosition, screenSize, targetsRef }:
         <>
             {/* Bullets */}
             <Instances range={100}>
-                <capsuleGeometry args={[0.2, 1, 8]} />
-                <meshStandardMaterial emissive="#ffdd00" emissiveIntensity={2} color="white" />
+                <capsuleGeometry args={[0.2, 1, 8]}/>
+                <meshStandardMaterial emissive="#ffdd00" emissiveIntensity={2} color="white"/>
 
                 {bullets.map(b => (
                     <Instance
@@ -193,8 +193,8 @@ export const BulletSystem = ({ handData, facePosition, screenSize, targetsRef }:
 
             {/* Explosion Fragments */}
             <Instances range={200}>
-                <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial emissive="#ff5500" emissiveIntensity={3} toneMapped={false} />
+                <boxGeometry args={[1, 1, 1]}/>
+                <meshStandardMaterial emissive="#ff5500" emissiveIntensity={3} toneMapped={false}/>
 
                 {fragments.map(f => (
                     <Instance

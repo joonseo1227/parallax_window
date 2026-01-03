@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FacePosition } from '../hooks/useFaceTracking';
+import {FacePosition} from '../hooks/useFaceTracking';
 
 // Tuning parameters matching ParallaxCamera defaults
 export const PARALLAX_CONSTANTS = {

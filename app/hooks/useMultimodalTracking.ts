@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { FaceLandmarker, HandLandmarker, FilesetResolver, NormalizedLandmark } from '@mediapipe/tasks-vision';
+import {useEffect, useRef, useState} from 'react';
+import {FaceLandmarker, FilesetResolver, HandLandmarker, NormalizedLandmark} from '@mediapipe/tasks-vision';
 
 export interface FacePosition {
     x: number; // -1 to 1
@@ -18,8 +18,8 @@ export interface HandData {
 
 export const useMultimodalTracking = () => {
     // Face State
-    const [facePosition, setFacePosition] = useState<FacePosition>({ x: 0, y: 0, z: 0, detected: false });
-    const facePositionRef = useRef<FacePosition>({ x: 0, y: 0, z: 0, detected: false });
+    const [facePosition, setFacePosition] = useState<FacePosition>({x: 0, y: 0, z: 0, detected: false});
+    const facePositionRef = useRef<FacePosition>({x: 0, y: 0, z: 0, detected: false});
 
     // Hand State
     const [handData, setHandData] = useState<HandData | null>(null);
@@ -73,7 +73,7 @@ export const useMultimodalTracking = () => {
             if (!videoRef.current) return;
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: 640, height: 480, frameRate: 30 }
+                    video: {width: 640, height: 480, frameRate: 30}
                 });
                 videoRef.current.srcObject = stream;
                 videoRef.current.addEventListener('loadeddata', predictWebcam);
@@ -106,11 +106,11 @@ export const useMultimodalTracking = () => {
                     const y = -(nose.y - 0.5) * 2;
                     const z = nose.z;
 
-                    const newFacePos = { x, y, z, detected: true };
+                    const newFacePos = {x, y, z, detected: true};
                     facePositionRef.current = newFacePos;
                     setFacePosition(newFacePos);
                 } else {
-                    const lostPos = { ...facePositionRef.current, detected: false };
+                    const lostPos = {...facePositionRef.current, detected: false};
                     facePositionRef.current = lostPos;
                     setFacePosition(lostPos);
                 }
@@ -121,14 +121,14 @@ export const useMultimodalTracking = () => {
                     const landmarks = handResults.landmarks[0]; // Assume 1 hand
 
                     // Analyze Gesture
-                    const { isGunPose, isFiring, indexTip, wrist } = analyzeHandGesture(landmarks, startTimeMs);
+                    const {isGunPose, isFiring, indexTip, wrist} = analyzeHandGesture(landmarks, startTimeMs);
 
                     const newHandData: HandData = {
                         landmarks,
                         isGunPose,
                         isFiring,
-                        wristPos: { x: wrist.x, y: wrist.y, z: wrist.z },
-                        indexTipPos: { x: indexTip.x, y: indexTip.y, z: indexTip.z }
+                        wristPos: {x: wrist.x, y: wrist.y, z: wrist.z},
+                        indexTipPos: {x: indexTip.x, y: indexTip.y, z: indexTip.z}
                     };
 
                     handDataRef.current = newHandData;
@@ -238,7 +238,7 @@ export const useMultimodalTracking = () => {
                 recoilCoolDown.current -= (timeMs - (lastTimeRef.current || timeMs)); // decay
             }
 
-            return { isGunPose, isFiring, indexTip, wrist };
+            return {isGunPose, isFiring, indexTip, wrist};
         };
 
 
@@ -255,5 +255,5 @@ export const useMultimodalTracking = () => {
         };
     }, []);
 
-    return { facePosition, facePositionRef, handData, handDataRef, videoRef };
+    return {facePosition, facePositionRef, handData, handDataRef, videoRef};
 };

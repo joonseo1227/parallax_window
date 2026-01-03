@@ -1,12 +1,12 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
-import { useRef, useEffect } from 'react';
-import { ParallaxCamera } from './ParallaxCamera';
-import { useMultimodalTracking } from '../hooks/useMultimodalTracking';
-import { BulletSystem } from './BulletSystem';
-import { TargetSystem, TargetSystemRef } from './TargetSystem'; // Import
-import { Box, Grid, Sphere, Environment, Edges } from '@react-three/drei';
+import {Canvas} from '@react-three/fiber';
+import {useEffect, useRef} from 'react';
+import {ParallaxCamera} from './ParallaxCamera';
+import {useMultimodalTracking} from '../hooks/useMultimodalTracking';
+import {BulletSystem} from './BulletSystem';
+import {TargetSystem, TargetSystemRef} from './TargetSystem'; // Import
+import {Box, Edges, Environment, Grid} from '@react-three/drei';
 
 // --- Dimensions Configuration ---
 // These must match the logical size used in ParallaxCamera projection
@@ -16,7 +16,7 @@ const ROOM_DEPTH = 60;
 
 export default function Scene() {
     // UPDATED: Use Multimodal Hook
-    const { facePosition, facePositionRef, handData, videoRef } = useMultimodalTracking();
+    const {facePosition, facePositionRef, handData, videoRef} = useMultimodalTracking();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const targetsRef = useRef<TargetSystemRef>(null); // Shared Ref
 
@@ -93,12 +93,12 @@ export default function Scene() {
         <div className="w-full h-full relative bg-black">
             {/* 3D Scene */}
             <Canvas className="absolute top-0 left-0 z-10" shadows>
-                <color attach="background" args={['#101010']} />
+                <color attach="background" args={['#101010']}/>
 
                 {/* Lighting & Environment */}
-                <ambientLight intensity={0.2} />
-                <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
-                <Environment preset="city" />
+                <ambientLight intensity={0.2}/>
+                <pointLight position={[10, 10, 10]} intensity={1.5} castShadow/>
+                <Environment preset="city"/>
 
                 {/* Objects */}
                 {/* FLOOR Grid */}
@@ -173,18 +173,18 @@ export default function Scene() {
 
                 {/* Deeper room box (Wireframe Container) */}
                 <Box args={[SCREEN_WIDTH, SCREEN_HEIGHT, ROOM_DEPTH]} position={[0, 0, -ROOM_DEPTH / 2]}>
-                    <meshBasicMaterial transparent opacity={0} />
-                    <Edges color="#333" />
+                    <meshBasicMaterial transparent opacity={0}/>
+                    <Edges color="#333"/>
                 </Box>
 
                 {/* NEW: Targets */}
-                <TargetSystem ref={targetsRef} />
+                <TargetSystem ref={targetsRef}/>
 
                 {/* NEW: Bullet System */}
                 <BulletSystem
                     handData={handData}
                     facePosition={facePosition}
-                    screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+                    screenSize={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT}}
                     targetsRef={targetsRef} // Pass Ref for collision
                 />
 
@@ -192,14 +192,17 @@ export default function Scene() {
                 <ParallaxCamera
                     facePosition={facePosition}
                     facePositionRef={facePositionRef}
-                    screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+                    screenSize={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT}}
                 />
             </Canvas>
 
             {/* UI Overlay / Debug */}
-            <div className="absolute top-4 left-4 z-20 bg-black/50 p-4 rounded text-white font-mono text-sm pointer-events-none">
-                <p>Tracking: {facePosition.detected ? <span className="text-green-400">FACE ACTIVE</span> : <span className="text-red-400">FACE LOST</span>}</p>
-                <p>Hand: {handData ? (handData.isGunPose ? <span className="text-red-500 font-bold">GUN DETECTED</span> : "Hand Visible") : "No Hand"}</p>
+            <div
+                className="absolute top-4 left-4 z-20 bg-black/50 p-4 rounded text-white font-mono text-sm pointer-events-none">
+                <p>Tracking: {facePosition.detected ? <span className="text-green-400">FACE ACTIVE</span> :
+                    <span className="text-red-400">FACE LOST</span>}</p>
+                <p>Hand: {handData ? (handData.isGunPose ?
+                    <span className="text-red-500 font-bold">GUN DETECTED</span> : "Hand Visible") : "No Hand"}</p>
                 {handData?.isFiring && <p className="text-yellow-400 font-bold animate-pulse">FIRING!</p>}
             </div>
 
@@ -210,7 +213,7 @@ export default function Scene() {
                 playsInline
                 muted
                 className="absolute top-4 right-4 w-32 h-24 object-cover opacity-50 z-20 rounded border border-white/20 pointer-events-auto"
-                style={{ transform: 'scaleX(-1)' }}
+                style={{transform: 'scaleX(-1)'}}
             />
             {/* Overlay Canvas */}
             <canvas
@@ -218,7 +221,7 @@ export default function Scene() {
                 width={640} // Default webcam resolution for coordinate mapping
                 height={480}
                 className="absolute top-4 right-4 w-32 h-24 z-30 pointer-events-none rounded border border-white/20"
-                style={{ transform: 'scaleX(-1)' }}
+                style={{transform: 'scaleX(-1)'}}
             />
         </div>
     );
