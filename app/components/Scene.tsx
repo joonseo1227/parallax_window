@@ -3,7 +3,8 @@
 import { Canvas } from '@react-three/fiber';
 import { useRef, useEffect } from 'react';
 import { ParallaxCamera } from './ParallaxCamera';
-import { useFaceTracking } from '../hooks/useFaceTracking';
+import { useMultimodalTracking } from '../hooks/useMultimodalTracking';
+import { BulletSystem } from './BulletSystem';
 import { Box, Grid, Sphere, Environment, Edges } from '@react-three/drei';
 
 // --- Dimensions Configuration ---
@@ -13,69 +14,71 @@ const SCREEN_HEIGHT = 22.5; // Aspect Ratio 16:9 approx
 const ROOM_DEPTH = 60;
 
 export default function Scene() {
-    const { facePosition, facePositionRef, landmarks, videoRef } = useFaceTracking();
+    // UPDATED: Use Multimodal Hook
+    const { facePosition, facePositionRef, handData, videoRef } = useMultimodalTracking();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // Draw Overlay
+    // Draw Overlay (Face + Hand)
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear previous frame
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (!landmarks || landmarks.length === 0) return;
-
         // Configuration
         const w = canvas.width;
         const h = canvas.height;
-        ctx.strokeStyle = '#00ff88'; // Cyan/Green neon
-        ctx.lineWidth = 2;
 
-        // 1. Calculate Bounding Box
-        let minX = 1, minY = 1, maxX = 0, maxY = 0;
-        // Optimization: Don't iterate all 478 landmarks every frame if performance is key, 
-        // but for <500 points it's negligible in JS.
-        for (let i = 0; i < landmarks.length; i++) {
-            const lm = landmarks[i];
-            if (lm.x < minX) minX = lm.x;
-            if (lm.x > maxX) maxX = lm.x;
-            if (lm.y < minY) minY = lm.y;
-            if (lm.y > maxY) maxY = lm.y;
+        // Clear
+        ctx.clearRect(0, 0, w, h);
+
+        // 1. Draw Hand / Gesture Feedback
+        if (handData) {
+            // Draw Reticle if Gun Pose
+            if (handData.isGunPose) {
+                const tip = handData.indexTipPos;
+                const tx = tip.x * w;
+                const ty = tip.y * h;
+
+                ctx.save();
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'red';
+
+                // Draw Crosshair
+                ctx.beginPath();
+                ctx.arc(tx, ty, 20, 0, Math.PI * 2);
+                ctx.moveTo(tx - 30, ty);
+                ctx.lineTo(tx + 30, ty);
+                ctx.moveTo(tx, ty - 30);
+                ctx.lineTo(tx, ty + 30);
+                ctx.stroke();
+
+                if (handData.isFiring) {
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // Optional: Draw processed skeleton or just Index Tip
+            ctx.fillStyle = '#00ff00';
+            ctx.beginPath();
+            ctx.arc(handData.indexTipPos.x * w, handData.indexTipPos.y * h, 5, 0, Math.PI * 2);
+            ctx.fill();
         }
 
-        // Draw Box
-        const boxX = minX * w;
-        const boxY = minY * h;
-        const boxW = (maxX - minX) * w;
-        const boxH = (maxY - minY) * h;
+        // 2. Draw Face Feedback (Simplified Box)
+        if (facePosition.detected) {
+            // We don't have raw face landmarks here anymore to keep performance high, 
+            // but we can visualize detection status.
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '16px monospace';
+            ctx.fillText("FACE TRACKED", 10, h - 10);
+        }
 
-        ctx.beginPath();
-        ctx.rect(boxX, boxY, boxW, boxH);
-        ctx.stroke();
-
-        // 2. Draw Key Points (Nose, Irises)
-        // Indices: Nose Tip (1), Left Eye Iris (468), Right Eye Iris (473)
-        // Note: Right/Left is subject to mirroring
-        const keyPoints = [
-            { idx: 1, color: '#ff0088' },   // Nose
-            { idx: 468, color: '#ffff00' }, // Iris
-            { idx: 473, color: '#ffff00' }  // Iris
-        ];
-
-        keyPoints.forEach(kp => {
-            const lm = landmarks[kp.idx];
-            if (lm) {
-                ctx.beginPath();
-                ctx.arc(lm.x * w, lm.y * h, 3, 0, 2 * Math.PI);
-                ctx.fillStyle = kp.color;
-                ctx.fill();
-            }
-        });
-
-    }, [landmarks]);
+    }, [facePosition.detected, handData]); // Dependency on handData state updates
 
     // Calculated positions
     const floorY = -SCREEN_HEIGHT / 2;
@@ -83,11 +86,6 @@ export default function Scene() {
     const leftX = -SCREEN_WIDTH / 2;
     const rightX = SCREEN_WIDTH / 2;
     const backZ = -ROOM_DEPTH;
-
-    // Grid Arguments
-    // Floor/Ceiling: [Width, Depth] -> [SCREEN_WIDTH, ROOM_DEPTH]
-    // Side Walls: [Depth, Height] -> [ROOM_DEPTH, SCREEN_HEIGHT] (Because rotated)
-    // Back Wall: [Width, Height] -> [SCREEN_WIDTH, SCREEN_HEIGHT]
 
     return (
         <div className="w-full h-full relative bg-black">
@@ -152,7 +150,7 @@ export default function Scene() {
                     cellColor="#6f6f6f"
                     sectionSize={10}
                     sectionThickness={1.5}
-                    sectionColor="#4b9d4b" // Green-ish
+                    sectionColor="#4b9d9d" // Green-ish
                     fadeDistance={100}
                     rotation={[0, 0, Math.PI / 2]}
                 />
@@ -193,11 +191,11 @@ export default function Scene() {
                     <Edges scale={1} threshold={15} color="white" />
                 </Box>
 
-                {/* Orange Box with Edges */}
-                <Box args={[2, 8, 2]} position={[10, -5, -20]}>
-                    <meshStandardMaterial color="orange" roughness={0.2} metalness={0.5} />
-                    <Edges scale={1} threshold={15} color="white" />
-                </Box>
+                {/* NEW: Bullet System */}
+                <BulletSystem
+                    handData={handData}
+                    screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+                />
 
                 {/* Camera Controller */}
                 <ParallaxCamera
@@ -209,10 +207,9 @@ export default function Scene() {
 
             {/* UI Overlay / Debug */}
             <div className="absolute top-4 left-4 z-20 bg-black/50 p-4 rounded text-white font-mono text-sm pointer-events-none">
-                <p>Tracking: {facePosition.detected ? <span className="text-green-400">ACTIVE</span> : <span className="text-red-400">LOST</span>}</p>
-                <p>X: {facePosition.x.toFixed(2)}</p>
-                <p>Y: {facePosition.y.toFixed(2)}</p>
-                <p>Z: {facePosition.z.toFixed(4)}</p>
+                <p>Tracking: {facePosition.detected ? <span className="text-green-400">FACE ACTIVE</span> : <span className="text-red-400">FACE LOST</span>}</p>
+                <p>Hand: {handData ? (handData.isGunPose ? <span className="text-red-500 font-bold">GUN DETECTED</span> : "Hand Visible") : "No Hand"}</p>
+                {handData?.isFiring && <p className="text-yellow-400 font-bold animate-pulse">FIRING!</p>}
             </div>
 
             {/* Hidden Webcam for processing */}
@@ -222,8 +219,6 @@ export default function Scene() {
                 playsInline
                 muted
                 className="absolute top-4 right-4 w-32 h-24 object-cover opacity-50 z-20 rounded border border-white/20 pointer-events-auto"
-                // Style to mirror logic if needed, but MediaPipe usually handles it.
-                // Style to mirror logic if needed, but MediaPipe usually handles it.
                 style={{ transform: 'scaleX(-1)' }}
             />
             {/* Overlay Canvas */}
