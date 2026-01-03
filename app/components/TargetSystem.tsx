@@ -25,18 +25,43 @@ interface TargetSystemProps {
 const COLORS = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#1A535C', '#F7FFF7'];
 
 export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((props, ref) => {
+    // Helper to get a random position that doesn't overlap too much with existing ones
+    // We'll use a simple retry mechanism
+    const getRandomPosition = (existingTargets: Target[] = []): THREE.Vector3 => {
+        const MIN_DIST = 6; // Minimum distance between centers (Scale is 3, radius ~1.5 -> 3.0 min dist for touch, so 6 is good spacing)
+
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const pos = new THREE.Vector3(
+                (Math.random() - 0.5) * 35, // X: Wider range
+                (Math.random() - 0.5) * 18, // Y: Wider range
+                -5 - Math.random() * 35     // Z: -5 to -40
+            );
+
+            let valid = true;
+            for (const t of existingTargets) {
+                if (t.active && pos.distanceTo(t.position) < MIN_DIST) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) return pos;
+        }
+        // Fallback
+        return new THREE.Vector3(
+            (Math.random() - 0.5) * 30,
+            (Math.random() - 0.5) * 15,
+            -10 - Math.random() * 30
+        );
+    };
+
     // Initialize random targets
     const initialTargets = useMemo(() => {
         const t: Target[] = [];
         for (let i = 0; i < 15; i++) {
             t.push({
                 id: i,
-                position: new THREE.Vector3(
-                    (Math.random() - 0.5) * 30, // X: -15 to 15
-                    (Math.random() - 0.5) * 15, // Y: -7.5 to 7.5
-                    -10 - Math.random() * 30    // Z: -10 to -40
-                ),
-                scale: 1,
+                position: getRandomPosition(t), // Pass standard array
+                scale: 3,
                 active: true,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)]
             });
@@ -73,15 +98,14 @@ export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((prop
 
                     // Respawn logic
                     const newTargets = [...prev];
+                    // Calculate new position avoiding others
+                    const newPos = getRandomPosition(prev.filter(t => t.active && t.id !== id));
+
                     newTargets[idx] = {
                         ...newTargets[idx],
                         active: true,
                         hitTime: undefined,
-                        position: new THREE.Vector3(
-                            (Math.random() - 0.5) * 30,
-                            (Math.random() - 0.5) * 15,
-                            -10 - Math.random() * 30
-                        ),
+                        position: newPos,
                         scale: 0 // Start small for spawn animation
                     };
                     return newTargets;
@@ -104,8 +128,8 @@ export const TargetSystem = forwardRef<TargetSystemRef, TargetSystemProps>((prop
             if (!t.active) return t;
 
             // Spawn in animation
-            if (t.scale < 1) {
-                return { ...t, scale: Math.min(1, t.scale + delta * 2) };
+            if (t.scale < 3) {
+                return { ...t, scale: Math.min(3, t.scale + delta * 5) }; // Animate to 3, faster speed
             }
             return t;
         }));
