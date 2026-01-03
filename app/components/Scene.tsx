@@ -1,7 +1,7 @@
 'use client';
 
 import {Canvas} from '@react-three/fiber';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ParallaxCamera} from './ParallaxCamera';
 import {useMultimodalTracking} from '../hooks/useMultimodalTracking';
 import {BulletSystem} from './BulletSystem';
@@ -9,9 +9,8 @@ import {TargetSystem, TargetSystemRef} from './TargetSystem'; // Import
 import {Box, Edges, Environment, Grid} from '@react-three/drei';
 
 // --- Dimensions Configuration ---
-// These must match the logical size used in ParallaxCamera projection
-const SCREEN_WIDTH = 40;
-const SCREEN_HEIGHT = 22.5; // Aspect Ratio 16:9 approx
+// Base height for consistent scaling
+const BASE_SCREEN_HEIGHT = 22.5;
 const ROOM_DEPTH = 60;
 
 export default function Scene() {
@@ -19,6 +18,35 @@ export default function Scene() {
     const {facePosition, facePositionRef, handData, videoRef} = useMultimodalTracking();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const targetsRef = useRef<TargetSystemRef>(null); // Shared Ref
+
+    // Responsive screen dimensions based on viewport aspect ratio
+    const [screenSize, setScreenSize] = useState({
+        width: BASE_SCREEN_HEIGHT * (16 / 9),
+        height: BASE_SCREEN_HEIGHT
+    });
+
+    // Update screen dimensions on window resize
+    useEffect(() => {
+        const updateScreenSize = () => {
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            setScreenSize({
+                width: BASE_SCREEN_HEIGHT * aspectRatio,
+                height: BASE_SCREEN_HEIGHT
+            });
+        };
+
+        // Set initial size
+        updateScreenSize();
+
+        // Add resize listener
+        window.addEventListener('resize', updateScreenSize);
+
+        // Cleanup
+        return () => window.removeEventListener('resize', updateScreenSize);
+    }, []);
+
+    const SCREEN_WIDTH = screenSize.width;
+    const SCREEN_HEIGHT = screenSize.height;
 
     // Draw Overlay (Face + Hand)
     useEffect(() => {
@@ -184,7 +212,7 @@ export default function Scene() {
                 <BulletSystem
                     handData={handData}
                     facePosition={facePosition}
-                    screenSize={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT}}
+                    screenSize={screenSize}
                     targetsRef={targetsRef} // Pass Ref for collision
                 />
 
@@ -192,7 +220,7 @@ export default function Scene() {
                 <ParallaxCamera
                     facePosition={facePosition}
                     facePositionRef={facePositionRef}
-                    screenSize={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT}}
+                    screenSize={screenSize}
                 />
             </Canvas>
 
