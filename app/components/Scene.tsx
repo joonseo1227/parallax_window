@@ -5,6 +5,7 @@ import { useRef, useEffect } from 'react';
 import { ParallaxCamera } from './ParallaxCamera';
 import { useMultimodalTracking } from '../hooks/useMultimodalTracking';
 import { BulletSystem } from './BulletSystem';
+import { TargetSystem, TargetSystemRef } from './TargetSystem'; // Import
 import { Box, Grid, Sphere, Environment, Edges } from '@react-three/drei';
 
 // --- Dimensions Configuration ---
@@ -17,6 +18,7 @@ export default function Scene() {
     // UPDATED: Use Multimodal Hook
     const { facePosition, facePositionRef, handData, videoRef } = useMultimodalTracking();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const targetsRef = useRef<TargetSystemRef>(null); // Shared Ref
 
     // Draw Overlay (Face + Hand)
     useEffect(() => {
@@ -175,27 +177,15 @@ export default function Scene() {
                     <Edges color="#333" />
                 </Box>
 
-                {/* Floating Object - Metallic Sphere with Reflections */}
-                <Sphere args={[2, 64, 64]} position={[0, 0, -10]}>
-                    <meshStandardMaterial
-                        color="#ff0080"
-                        roughness={0.05}
-                        metalness={0.9}
-                        envMapIntensity={1}
-                    />
-                </Sphere>
-
-                {/* Cyan Box with Edges */}
-                <Box args={[4, 4, 4]} position={[-10, 5, -30]}>
-                    <meshStandardMaterial color="cyan" roughness={0.2} metalness={0.5} />
-                    <Edges scale={1} threshold={15} color="white" />
-                </Box>
+                {/* NEW: Targets */}
+                <TargetSystem ref={targetsRef} />
 
                 {/* NEW: Bullet System */}
                 <BulletSystem
                     handData={handData}
                     facePosition={facePosition}
                     screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+                    targetsRef={targetsRef} // Pass Ref for collision
                 />
 
                 {/* Camera Controller */}

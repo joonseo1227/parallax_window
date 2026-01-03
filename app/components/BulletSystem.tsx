@@ -5,11 +5,13 @@ import * as THREE from 'three';
 import { HandData } from '../hooks/useMultimodalTracking';
 import { calculateCameraPosition } from '../utils/parallaxUtils';
 import { FacePosition } from '../hooks/useFaceTracking';
+import { TargetSystemRef } from './TargetSystem';
 
 interface BulletSystemProps {
     handData: HandData | null;
     facePosition: FacePosition;
     screenSize: { width: number; height: number };
+    targetsRef?: React.RefObject<TargetSystemRef | null>;
 }
 
 interface Bullet {
@@ -20,7 +22,7 @@ interface Bullet {
     life: number;
 }
 
-export const BulletSystem = ({ handData, facePosition, screenSize }: BulletSystemProps) => {
+export const BulletSystem = ({ handData, facePosition, screenSize, targetsRef }: BulletSystemProps) => {
     const [bullets, setBullets] = useState<Bullet[]>([]);
     const lastFireTime = useRef(0);
 
@@ -47,31 +49,45 @@ export const BulletSystem = ({ handData, facePosition, screenSize }: BulletSyste
             const newPos = b.position.clone().add(b.velocity.clone().multiplyScalar(delta * 200)); // Speed
             const newLife = b.life - delta;
 
+            let active = newLife > 0 && newPos.z > -200;
+
+            // 3. Collision Detection
+            if (active && targetsRef?.current) {
+                const targets = targetsRef.current.targets.current;
+                if (targets) {
+                    for (const target of targets) {
+                        if (!target.active) continue;
+
+                        // Check distance (Simple Sphere Collision)
+                        // Scale is approx radius/half-size. 
+                        const collisionRadius = target.scale;
+
+                        const dist = newPos.distanceTo(target.position);
+                        if (dist < collisionRadius + 0.5) { // +0.5 for bullet size safety
+                            targetsRef.current.hit(target.id);
+                            active = false; // Destroy bullet on impact
+                            break;
+                        }
+                    }
+                }
+            }
+
             return {
                 ...b,
                 position: newPos,
                 life: newLife,
-                // Kill if too far or generic cleanup
-                active: newLife > 0 && newPos.z > -200
+                active: active
             };
         }).filter(b => b.active));
     });
 
     const spawnBullet = (data: HandData) => {
-        // Map Hand Coordinates (Normalized 0..1) to World
-        // Note: For this specific request, we ignore hand position for SPARING point,
-        // but triggered by hand.
-        // Screen Center at Z=0 is (0,0,0) in our World, assuming Scene centering.
-        // We want unconditional firing from center.
-
         const startPos = new THREE.Vector3(0, 0, 0);
 
         // Calculate Camera Position (Eye Position)
         const cameraPos = calculateCameraPosition(facePosition);
 
         // Raycast Direction: From Camera (Eye) -> Hand (Screen Plane) -> World
-        // Vector = StartPos - CameraPos
-        // (Hand is at StartPos)
         const direction = new THREE.Vector3().subVectors(startPos, cameraPos).normalize();
 
         const newBullet: Bullet = {
@@ -94,11 +110,7 @@ export const BulletSystem = ({ handData, facePosition, screenSize }: BulletSyste
                 <Instance
                     key={b.id}
                     position={b.position}
-                    rotation={[Math.PI / 2, 0, 0]} // Align capsule with Z axis (default)
-                // TODO: Rotate bullet to match direction? 
-                // Capsule default is Y-axis alignment. Rotation [PI/2, 0, 0] makes it Z-axis aligned.
-                // If we want it to point in velocity dir, we need lookAt.
-                // For now, simple Z alignment is fine as they fly "into" the screen.
+                    rotation={[Math.PI / 2, 0, 0]} // Align capsule with Z axis
                 />
             ))}
         </Instances>
