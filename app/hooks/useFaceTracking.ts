@@ -18,6 +18,7 @@ export interface NormalizedLandmark {
 export const useFaceTracking = () => {
   const [facePosition, setFacePosition] = useState<FacePosition>({ x: 0, y: 0, z: 0, detected: false });
   const [landmarks, setLandmarks] = useState<NormalizedLandmark[]>([]);
+  const facePositionRef = useRef<FacePosition>({ x: 0, y: 0, z: 0, detected: false });
   const videoRef = useRef<HTMLVideoElement>(null);
   const requestRef = useRef<number>(0);
 
@@ -87,9 +88,13 @@ export const useFaceTracking = () => {
           // For the "Window" effect, we roughly need "head position".
           const z = nose.z; // TODO: Refine Z scaling
 
-          setFacePosition({ x, y, z, detected: true });
+
+          const newPos = { x, y, z, detected: true };
+          facePositionRef.current = newPos;
+          setFacePosition(newPos);
           setLandmarks(landmarks);
         } else {
+          facePositionRef.current = { ...facePositionRef.current, detected: false };
           setFacePosition(prev => ({ ...prev, detected: false }));
           setLandmarks([]);
         }
@@ -110,5 +115,5 @@ export const useFaceTracking = () => {
     };
   }, []);
 
-  return { facePosition, landmarks, videoRef };
+  return { facePosition, facePositionRef, landmarks, videoRef };
 };

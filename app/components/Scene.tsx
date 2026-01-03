@@ -13,7 +13,7 @@ const SCREEN_HEIGHT = 22.5; // Aspect Ratio 16:9 approx
 const ROOM_DEPTH = 60;
 
 export default function Scene() {
-    const { facePosition, landmarks, videoRef } = useFaceTracking();
+    const { facePosition, facePositionRef, landmarks, videoRef } = useFaceTracking();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Draw Overlay
@@ -202,6 +202,7 @@ export default function Scene() {
                 {/* Camera Controller */}
                 <ParallaxCamera
                     facePosition={facePosition}
+                    facePositionRef={facePositionRef}
                     screenSize={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
                 />
             </Canvas>

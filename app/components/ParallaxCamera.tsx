@@ -5,15 +5,16 @@ import { FacePosition } from '../hooks/useFaceTracking';
 
 interface ParallaxCameraProps {
     facePosition: FacePosition;
+    facePositionRef?: React.MutableRefObject<FacePosition>; // Optional ref for high-freq updates
     screenSize?: { width: number; height: number };
 }
 
-export const ParallaxCamera = ({ facePosition, screenSize = { width: 40, height: 22.5 } }: ParallaxCameraProps) => {
+export const ParallaxCamera = ({ facePosition, facePositionRef, screenSize = { width: 40, height: 22.5 } }: ParallaxCameraProps) => {
     const { camera } = useThree();
     const currentPos = useRef(new THREE.Vector3(0, 0, 60)); // Initial camera position (Standard Z distance)
 
     // Tuning parameters
-    const SMOOTHING_FACTOR = 0.1; // Strong smoothing
+    const SMOOTHING_FACTOR = 0.3; // Increased responsiveness (was 0.1)
 
     // Physical-ish mapping
     // Input x,y: [-1, 1]. Map to physical units relative to screen center.
@@ -31,7 +32,10 @@ export const ParallaxCamera = ({ facePosition, screenSize = { width: 40, height:
         // 1. Smoothing & Target Calculation
         let targetVec: THREE.Vector3;
 
-        if (!facePosition.detected) {
+        // Use ref if available for latest data, otherwise prop
+        const latestPos = facePositionRef?.current || facePosition;
+
+        if (!latestPos.detected) {
             // Return to center if lost
             targetVec = new THREE.Vector3(0, 0, BASE_Z);
         } else {
@@ -41,20 +45,12 @@ export const ParallaxCamera = ({ facePosition, screenSize = { width: 40, height:
             // Eye at (px, py, pz).
             // Screen is fixed window at Z=0.
 
-            const px = -facePosition.x * SCALE_X; // X input is normalized -1(left)..1(right). 
-            // If user moves Left (-X), Camera is at Left (-X).
-            // Screen is centered.
+            const px = -latestPos.x * SCALE_X; // X input is normalized -1(left)..1(right). 
 
-            const py = facePosition.y * SCALE_Y;
+            const py = latestPos.y * SCALE_Y;
 
             // Z Logic: facePosition.z is roughly (nose.z).
-            // Closest is small/negative in MediaPipe? 
-            // Actually tracking is messy for Z. 
-            // Let's assume input Z is normalized roughly.
-            // We'll map it: detected Z varies.
-            // For now, let's just make it responsive.
-            // facePosition.z from Hook needs verifying but let's assume it brings variation.
-            const pz = BASE_Z + (facePosition.z * Z_RANGE);
+            const pz = BASE_Z + (latestPos.z * Z_RANGE);
 
             targetVec = new THREE.Vector3(px, py, Math.max(10, pz)); // Clamp Z min 10
         }
