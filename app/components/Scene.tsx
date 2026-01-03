@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { ParallaxCamera } from './ParallaxCamera';
 import { useFaceTracking } from '../hooks/useFaceTracking';
 import { Box, Grid, Sphere, Environment, Edges } from '@react-three/drei';
@@ -13,7 +13,69 @@ const SCREEN_HEIGHT = 22.5; // Aspect Ratio 16:9 approx
 const ROOM_DEPTH = 60;
 
 export default function Scene() {
-    const { facePosition, videoRef } = useFaceTracking();
+    const { facePosition, landmarks, videoRef } = useFaceTracking();
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Draw Overlay
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Clear previous frame
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!landmarks || landmarks.length === 0) return;
+
+        // Configuration
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.strokeStyle = '#00ff88'; // Cyan/Green neon
+        ctx.lineWidth = 2;
+
+        // 1. Calculate Bounding Box
+        let minX = 1, minY = 1, maxX = 0, maxY = 0;
+        // Optimization: Don't iterate all 478 landmarks every frame if performance is key, 
+        // but for <500 points it's negligible in JS.
+        for (let i = 0; i < landmarks.length; i++) {
+            const lm = landmarks[i];
+            if (lm.x < minX) minX = lm.x;
+            if (lm.x > maxX) maxX = lm.x;
+            if (lm.y < minY) minY = lm.y;
+            if (lm.y > maxY) maxY = lm.y;
+        }
+
+        // Draw Box
+        const boxX = minX * w;
+        const boxY = minY * h;
+        const boxW = (maxX - minX) * w;
+        const boxH = (maxY - minY) * h;
+
+        ctx.beginPath();
+        ctx.rect(boxX, boxY, boxW, boxH);
+        ctx.stroke();
+
+        // 2. Draw Key Points (Nose, Irises)
+        // Indices: Nose Tip (1), Left Eye Iris (468), Right Eye Iris (473)
+        // Note: Right/Left is subject to mirroring
+        const keyPoints = [
+            { idx: 1, color: '#ff0088' },   // Nose
+            { idx: 468, color: '#ffff00' }, // Iris
+            { idx: 473, color: '#ffff00' }  // Iris
+        ];
+
+        keyPoints.forEach(kp => {
+            const lm = landmarks[kp.idx];
+            if (lm) {
+                ctx.beginPath();
+                ctx.arc(lm.x * w, lm.y * h, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = kp.color;
+                ctx.fill();
+            }
+        });
+
+    }, [landmarks]);
 
     // Calculated positions
     const floorY = -SCREEN_HEIGHT / 2;
@@ -160,6 +222,15 @@ export default function Scene() {
                 muted
                 className="absolute top-4 right-4 w-32 h-24 object-cover opacity-50 z-20 rounded border border-white/20 pointer-events-auto"
                 // Style to mirror logic if needed, but MediaPipe usually handles it.
+                // Style to mirror logic if needed, but MediaPipe usually handles it.
+                style={{ transform: 'scaleX(-1)' }}
+            />
+            {/* Overlay Canvas */}
+            <canvas
+                ref={canvasRef}
+                width={640} // Default webcam resolution for coordinate mapping
+                height={480}
+                className="absolute top-4 right-4 w-32 h-24 z-30 pointer-events-none rounded border border-white/20"
                 style={{ transform: 'scaleX(-1)' }}
             />
         </div>
