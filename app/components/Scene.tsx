@@ -262,7 +262,7 @@ export default function Scene() {
                     rel="noopener noreferrer"
                     className="hover:text-white transition-colors font-medium border-b border-transparent hover:border-white/50 pb-0.5"
                 >
-                    Joonseo Jung
+                    joonseo1227
                 </a>
                 <span className="opacity-50">•</span>
                 <a
