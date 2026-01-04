@@ -251,6 +251,29 @@ export default function Scene() {
                 className="absolute top-4 right-4 w-32 h-24 z-30 pointer-events-none rounded border border-white/20"
                 style={{transform: 'scaleX(-1)'}}
             />
+
+            {/* Links Overlay */}
+            <div
+                className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 text-white/40 text-xs font-light tracking-wider pointer-events-auto select-none">
+                <span>Made by</span>
+                <a
+                    href="https://www.joonseo1227.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors font-medium border-b border-transparent hover:border-white/50 pb-0.5"
+                >
+                    Joonseo Jung
+                </a>
+                <span className="opacity-50">•</span>
+                <a
+                    href="https://github.com/joonseo1227/parallax_window"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors hover:border-b hover:border-white/50 pb-0.5"
+                >
+                    GitHub
+                </a>
+            </div>
         </div>
     );
 }
